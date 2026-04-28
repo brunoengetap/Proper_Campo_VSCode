@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -3341,7 +3341,7 @@ function pgpNormalizeValue(v){
 function normalizeEntityName(v) {
   return String(v || '')
     .trim().toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/\b(ltda|s\.?a\.?|eireli|me|epp|ss|lda|inc|llc|do brasil|do norte|do sul|e cia)\.?\b/gi, '')
     .replace(/[^a-z0-9\s]/g, '')
     .replace(/\s+/g, ' ').trim();
@@ -3373,6 +3373,7 @@ function pgpGetPending(){
 
 function pgpBuildVisitRequest(payload){
   return {
+    visit_id: payload.visit_id || ('VIS-' + Date.now() + '-' + Math.random().toString(36).slice(2,6)),
     machine_id:payload.machine_id||'',
     client:payload.client,
     branch:payload.branch,
@@ -3794,7 +3795,7 @@ async function pgpClientSearch(){
   const acList=document.getElementById('pgpClientAcList');
   if(q.length<2){acList.style.display='none';return;}
 
-  const norm=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const norm=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
   // 1. Buscar no localStorage (imediato)
   const localClients=[...new Set(
@@ -3859,7 +3860,7 @@ async function pgpSelectClient(name){
 async function pgpFetchMachinesByClient(client){
   const listEl=document.getElementById('pgpMachineList');
   if(!listEl) return;
-  const norm=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const norm=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
   // 1. Buscar no localStorage
   const localMachines=pgpGetLocalMachines().filter(m=>norm(m.client)===norm(client));
@@ -3919,7 +3920,7 @@ function pgpMachineCardNew(client){
 
 function pgpSelectClientMachine(eq){
   const localDb=pgpGetLocalMachines();
-  const norm=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const norm=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   let found=null;
 
   // 1. Por machineKey
