@@ -3389,6 +3389,10 @@ function pgpBuildVisitRequest(payload){
     scenario:payload.scenario,
     parts:payload.parts,
     generalObs:payload.generalObs,
+    cnpj:  payload.cnpj  || '',
+    phone: payload.phone || '',
+    email: payload.email || '',
+    city:  payload.city  || '',
   };
 }
 
@@ -4257,6 +4261,10 @@ function pgpBuildPayload(){
     visitDate:new Date().toISOString(),
     scenario:(document.getElementById(`${p}scenario`)?.value||''),
     parts,generalObs:gv('obs_gerais'),
+    cnpj:   gv('cnpj')   || '',
+    phone:  gv('telefone') || '',
+    email:  gv('email')  || '',
+    city:   gv('cidade') || '',
   };
 }
 
@@ -4296,6 +4304,26 @@ async function pgpEnviarGS(){
       }catch(partsErr){
         pgpAddPending('parts', partsBody);
         partsWarn = '<br><small style="color:var(--orange)">Peças ficaram na fila para reenvio automático.</small>';
+      }
+    }
+
+    // Enviar dados do cliente ao Sheets se CNPJ ou telefone foram preenchidos
+    if (payload.cnpj || payload.phone || payload.email) {
+      try {
+        const clientNome = payload.client || '';
+        if (clientNome) {
+          await pgpPostJson('saveClient', {
+            client: {
+              nome:     clientNome,
+              cnpj:     payload.cnpj  || '',
+              telefone: payload.phone || '',
+              email:    payload.email || '',
+              cidade:   payload.city  || '',
+            }
+          });
+        }
+      } catch(clientErr) {
+        console.warn('saveClient falhou (não crítico):', clientErr);
       }
     }
 
@@ -4345,6 +4373,10 @@ function pgpUpdateAdminLocal(payload){
     if(payload.hourTotal || payload.hourTotal===0) eq.hourTotal=parseInt(payload.hourTotal)||0;
     if(payload.hpw || payload.hpw===0) eq.hpw=parseInt(payload.hpw)||0;
     eq.lastVisit=new Date().toISOString().slice(0,10);
+    if(payload.cnpj)  eq.cnpj  = payload.cnpj;
+    if(payload.phone) eq.phone = payload.phone;
+    if(payload.email) eq.email = payload.email;
+    if(payload.city)  eq.city  = payload.city;
     if(payload.generalObs) eq.obs = payload.generalObs;
     if(payload.parts){
       if(!eq.parts) eq.parts={};
