@@ -959,7 +959,6 @@ function buildPartsTable(p, midx, scenario) {
     // Campos ocultos obrigatórios para compatibilidade de IDs
     const hiddenFields = `
       ${scenario !== 'C' && scenario !== 'D' ? `<input type="hidden" id="${pk}_contador" data-key="${pk}_contador" value="${scenario==='E'?'regressivo':scenario==='B'?'nao_informado':'nao_informado'}">` : ''}
-      ${(scenario !== 'D') ? `<input type="hidden" id="${pk}_int" data-key="${pk}_int" value="${pt.intDefault}">` : ''}
     `;
 
     return `
@@ -1020,6 +1019,17 @@ function buildPartsTable(p, midx, scenario) {
               <label>Última troca (h total)</label>
               <input type="number" placeholder="Se conhecido" id="${pk}_ult" data-key="${pk}_ult">
             </div>
+            ${scenario !== 'D' ? `
+            <div class="pt-det-field">
+              <label>Intervalo entre trocas (h)</label>
+              <input type="number"
+                     placeholder="${pt.intDefault}"
+                     id="${pk}_int"
+                     data-key="${pk}_int"
+                     value="${pt.intDefault}"
+                     onclick="event.stopPropagation()"
+                     oninput="calcPartRow('${pk}',${pt.intDefault});event.stopPropagation()">
+            </div>` : ''}
             <div class="pt-det-field" style="grid-column:1/-1">
               <label>Referência / Código</label>
               <input type="text" placeholder="Código da peça" id="${pk}_ref" data-key="${pk}_ref">
@@ -4270,6 +4280,28 @@ function pgpBuildPayload(){
 
 async function pgpEnviarGS(){
   const payload=pgpBuildPayload();
+
+  // VALIDAÇÃO: horímetro não pode ser menor que o da última visita sem confirmação
+  const _prevHour = parseInt(_pgpLoadedMachine?.hourTotal) || 0;
+  const _newHour  = parseInt(payload.hourTotal) || 0;
+
+  if (_prevHour > 0 && _newHour > 0 && _newHour < _prevHour) {
+    const _confirmRegressao = confirm(
+      `⚠️ Atenção!
+
+` +
+      `O horímetro informado (${_newHour.toLocaleString('pt-BR')}h) é MENOR ` +
+      `que o da última visita registrada (${_prevHour.toLocaleString('pt-BR')}h).
+
+` +
+      `Isso só é válido se o horímetro físico da máquina foi trocado ou zerado.
+
+` +
+      `Deseja enviar mesmo assim?`
+    );
+    if (!_confirmRegressao) return;
+  }
+
   const statusEl=document.getElementById('pgpSendStatus');
   const btn=document.getElementById('btnEnviarGS');
 
