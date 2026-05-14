@@ -4311,6 +4311,8 @@ function pgpBuildPreventivaPayload(midx=currentMachine){
     const intEl=document.getElementById(pk+'_int');
     const ultEl=document.getElementById(pk+'_ult');
     const naBtn=document.getElementById(pk+'_na');
+    const vmEl =document.getElementById(pk+'_valor_mostrado');
+    const cntEl=document.getElementById(pk+'_contador');
     const isNA=naBtn?.classList.contains('active')||false;
 
     const acaoFinal=isNA?'na':acao;
@@ -4331,7 +4333,9 @@ function pgpBuildPreventivaPayload(midx=currentMachine){
         return refNova===refAnterior?'original':'manual';
       })(),
       lastChange,
-      obs:(base.parts[aid]?.obs)||''
+      obs:(base.parts[aid]?.obs)||'',
+      valorMostrado: vmEl?.value.trim()||'',
+      contador:      cntEl?.value||''
     };
   });
 
