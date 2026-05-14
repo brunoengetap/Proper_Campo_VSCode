@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ProperCare Field · PGP Preventivas v8.4.5</title>
+<title>ProperCare Field · PGP Preventivas v8.5.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -464,7 +464,7 @@
   <div class="top-row">
     <div>
       <h1>📋 ProperCare Field</h1>
-      <div class="subtitle">PGP Preventiva · v8.4.5</div>
+      <div class="subtitle">PGP Preventiva · v8.5.0</div>
     </div>
     <div class="header-right">
       <div class="progress-pill" id="progressPill">0 / 0</div>
@@ -3939,6 +3939,15 @@ function pgpLoadMachine(eq,localDb,midx=currentMachine){
       const ultEl=document.getElementById(`${pk}_ult`);  if(ultEl&&sp.lastChange) ultEl.value=sp.lastChange;
       const refEl=document.getElementById(`${pk}_ref`);  if(refEl&&sp.ref)        refEl.value=sp.ref;
       const intEl=document.getElementById(`${pk}_int`);  if(intEl&&sp.interval)   intEl.value=sp.interval;
+      // Restaurar valorMostrado e contador da visita anterior como referência visual
+      if(sp.valorMostrado){
+        const vmEl=document.getElementById(`${pk}_valor_mostrado`);
+        if(vmEl) vmEl.value=sp.valorMostrado;
+      }
+      if(sp.contador){
+        const cEl=document.getElementById(`${pk}_contador`);
+        if(cEl) cEl.value=sp.contador;
+      }
       if(sp.na){
         const nb=document.getElementById(`${pk}_na`);
         if(nb&&!nb.classList.contains('active')){
@@ -4526,8 +4535,14 @@ function pgpBuildPayload(midx=currentMachine){
     const vmEl   =document.getElementById(`${pk}_valor_mostrado`);
     let lastChange=0;
     if(ultEl?.value) lastChange=parseInt(ultEl.value)||0;
-    else if(valorEl?.value&&contEl?.value==='regressivo') lastChange=hourTotal-(parseFloat(valorEl.value)||0);
-    else if(valorEl?.value&&contEl?.value==='progressivo') lastChange=hourTotal-(parseFloat(valorEl.value)||0);
+    else if(valorEl?.value&&contEl?.value==='progressivo'){
+      // Progressivo: valorMostrado = horas rodadas desde última troca → lastChange = hourTotal - horasRodadas
+      lastChange=hourTotal-(parseFloat(valorEl.value)||0);
+    } else if(valorEl?.value&&contEl?.value==='regressivo'){
+      // Regressivo: valorMostrado = horas RESTANTES → horasRodadas = interval - valorMostrado → lastChange = hourTotal - horasRodadas
+      const horasRodadas=(parseInt(intEl?.value)||pt.intDefault)-(parseFloat(valorEl.value)||0);
+      lastChange=hourTotal-horasRodadas;
+    }
     const interval=parseInt(intEl?.value)||pt.intDefault;
     // v8.4.4: calcular horasRodadas/horasRestantes/status para o payload
     const vmN = parseFloat(vmEl?.value||'');
@@ -4758,7 +4773,10 @@ function pgpUpdateAdminLocal(payload){
       Object.entries(payload.parts).forEach(([pid,ps])=>{
         const ex=eq.parts[pid]||{};
         eq.parts[pid]={name:ps.name||ex.name||pid,lastChange:ps.lastChange!==undefined?ps.lastChange:ex.lastChange||0,
-          interval:ps.interval||ex.interval||2000,ref:ps.ref||ex.ref||'',na:ps.na!==undefined?ps.na:ex.na||false};
+          interval:ps.interval||ex.interval||2000,ref:ps.ref||ex.ref||'',na:ps.na!==undefined?ps.na:ex.na||false,
+          contador:ps.contador||ex.contador||'',valorMostrado:ps.valorMostrado||ex.valorMostrado||'',
+          horasRodadas:ps.horasRodadas||ex.horasRodadas||'',horasRestantes:ps.horasRestantes||ex.horasRestantes||'',
+          status:ps.status||ex.status||''};
       });
     }
     localStorage.setItem('proper_admin_v2',JSON.stringify(db));
